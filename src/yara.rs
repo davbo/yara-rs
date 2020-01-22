@@ -76,10 +76,11 @@ fn st_string() -> Parser<u8, YaraStrings> {
 }
 
 fn st_hex() -> Parser<u8, YaraStrings> {
-    let jump = sym(b'[') * opt_integer() - sym(b'-') + opt_integer();
+    let jump = (sym(b'[') * space()) * opt_integer() - sym(b'-') + opt_integer() - (space() - sym(b']'));
     let jump_res = jump.map(|j|YaraHex::Jump(j.0, j.1));
-    let hex_string = sym(b'{') * jump_res - sym(b'}');
-    hex_string.map(|j|YaraStrings::Hex(vec!(j)))
+    let hex_string = list(jump_res, space());
+    let pattern = (sym(b'{') - space()) * hex_string - (space() - sym(b'}'));
+    pattern.map(|s|YaraStrings::Hex(s))
 }
 
 fn boolean() -> Parser<u8, YaraMetaValues> {
@@ -106,8 +107,9 @@ fn strings() -> Parser<u8, YaraSections> {
 }
 
 pub fn rule() -> Parser<u8, YaraRule> {
+    let sections = meta() | strings();
     let rule_name = seq(b"rule") * identifier();
-    let rule = (space() * rule_name - sym(b'{')) + ((meta() | strings()).repeat(0..) - sym(b'}') - space());
+    let rule = (space() * rule_name - sym(b'{')) + (sections.repeat(0..) - sym(b'}') - space());
     rule.map(|r|YaraRule{name: r.0, sections: r.1})
 }
 
