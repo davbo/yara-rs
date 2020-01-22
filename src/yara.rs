@@ -17,19 +17,45 @@ pub enum YaraHex {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum YaraMetaValues {
+    Str(String),
+    Bool(bool),
+    Int(usize)
+}
+
+#[derive(Debug, PartialEq)]
 pub enum YaraStrings {
     Str(String),
     Hex(Vec<YaraHex>)
 }
 
+
+#[derive(Debug)]
+pub enum YaraSections {
+    Meta(HashMap<YaraIdentifier, YaraMetaValues>),
+    Strings(HashMap<YaraIdentifier, YaraStrings>),
+}
+
 #[derive(Debug)]
 pub struct YaraRule {
     name: YaraIdentifier,
-    meta: HashMap<YaraIdentifier, String>,
+    sections: Vec<YaraSections>
 }
 
 fn space() -> Parser<u8, ()> {
 	  one_of(b" \t\r\n").repeat(0..).discard()
+}
+
+fn integer() -> Parser<u8, usize> {
+    one_of(b"0123456789").repeat(1..).convert(String::from_utf8).map(|i|i.parse::<usize>().unwrap())
+}
+
+fn opt_integer() -> Parser<u8, usize> {
+    one_of(b"0123456789").repeat(0..).convert(String::from_utf8).map(|i|i.parse::<usize>().unwrap_or(0))
+}
+
+fn meta_integer() -> Parser<u8, YaraMetaValues> {
+    integer().map(|i|YaraMetaValues::Int(i))
 }
 
 fn string() -> Parser<u8, String> {
@@ -41,22 +67,48 @@ fn string() -> Parser<u8, String> {
 	  string.convert(String::from_utf8)
 }
 
+fn meta_string() -> Parser<u8, YaraMetaValues> {
+	  string().map(|s|YaraMetaValues::Str(s))
+}
+
+fn st_string() -> Parser<u8, YaraStrings> {
+	  string().map(|s|YaraStrings::Str(s))
+}
+
+fn st_hex() -> Parser<u8, YaraStrings> {
+    let jump = sym(b'[') * opt_integer() - sym(b'-') + opt_integer();
+    let jump_res = jump.map(|j|YaraHex::Jump(j.0, j.1));
+    let hex_string = sym(b'{') * jump_res - sym(b'}');
+    hex_string.map(|j|YaraStrings::Hex(vec!(j)))
+}
+
+fn boolean() -> Parser<u8, YaraMetaValues> {
+    seq(b"true").map(|_|YaraMetaValues::Bool(true)) | seq(b"false").map(|_|YaraMetaValues::Bool(false))
+}
+
 fn identifier() -> Parser<u8, YaraIdentifier> {
-    let identifier = space() * one_of(b"abcdefghijklmnopqrstuvwxyz_").repeat(1..) - space();
+    let identifier = space() * one_of(b"abcdefghijklmnopqrstuvwxyz_$").repeat(1..) - space();
     identifier.convert(String::from_utf8).map(|id|YaraIdentifier::Str(id))
 }
 
-fn meta() -> Parser<u8, HashMap<YaraIdentifier, String>> {
-    let member = identifier() - space() - sym(b'=') - space() + string();
+fn meta() -> Parser<u8, YaraSections> {
+    let member = identifier() - space() - sym(b'=') - space() + (meta_integer() | meta_string() | boolean());
     let members = list(member, space());
     let meta = space() * seq(b"meta:") * space() * members - space();
-	  meta.map(|members|members.into_iter().collect::<HashMap<_,_>>())
+	  meta.map(|members|members.into_iter().collect::<HashMap<_,_>>()).map(|s|YaraSections::Meta(s))
+}
+
+fn strings() -> Parser<u8, YaraSections> {
+    let member = identifier() - space() - sym(b'=') - space() + (st_string() | st_hex());
+    let members = list(member, space());
+    let strings = space() * seq(b"strings:") * space() * members - space();
+	  strings.map(|members|members.into_iter().collect::<HashMap<_,_>>()).map(|s|YaraSections::Strings(s))
 }
 
 pub fn rule() -> Parser<u8, YaraRule> {
     let rule_name = seq(b"rule") * identifier();
-    let rule = (space() * rule_name - sym(b'{')) + (meta() - sym(b'}') - space());
-    rule.map(|r|YaraRule{name: r.0, meta: r.1})
+    let rule = (space() * rule_name - sym(b'{')) + ((meta() | strings()).repeat(0..) - sym(b'}') - space());
+    rule.map(|r|YaraRule{name: r.0, sections: r.1})
 }
 
 
@@ -70,10 +122,15 @@ rule rule_name
 {
     meta:
         description = "This is just an example"
+        priority = 5
+        enabled = true
+    strings:
+        $b = { [0-2] }
+        $c = "abcd"
 }
         "#;
         let result = rule().parse(input);
 	      assert!(result.is_ok(), format!("Example failed to parse: {:#?}", result));
-        println!()
+        println!("{:#?}", result.unwrap())
     }
 }
