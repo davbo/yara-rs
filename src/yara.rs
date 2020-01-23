@@ -78,10 +78,11 @@ fn st_string() -> Parser<u8, YaraStrings> {
 }
 
 fn st_hex() -> Parser<u8, YaraStrings> {
+    let wildcard = sym(b'?').map(|_|YaraHex::Wildcard);
     let jump = (sym(b'[') * space()) * opt_integer() - sym(b'-') + opt_integer() - (space() - sym(b']'));
     let jump_res = jump.map(|j|YaraHex::Jump(j.0, j.1));
     let byte = one_of(HEX).map(|b|YaraHex::Byte(HEX.iter().position(|&a| a == b ).unwrap() as u8));
-    let hex_string = list(byte | jump_res, space());
+    let hex_string = list(byte | jump_res | wildcard, space());
     let pattern = (sym(b'{') - space()) * hex_string - (space() - sym(b'}'));
     pattern.map(|s|YaraStrings::Hex(s))
 }
@@ -130,7 +131,7 @@ rule rule_name
         priority = 5
         enabled = true
     strings:
-        $b = { AB [0-2] CD }
+        $b = { AB [0-2] ?D }
         $c = "abcd"
 }
         "#;
