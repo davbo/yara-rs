@@ -31,7 +31,6 @@ pub enum YaraStrings {
     Hex(Vec<YaraHex>)
 }
 
-
 #[derive(Debug)]
 pub enum YaraSections {
     Meta(HashMap<YaraIdentifier, YaraMetaValues>),

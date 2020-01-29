@@ -18,6 +18,6 @@ rule rule_name
         description = "This is just an example"
 }
         "#;
-    let result = yara::rule().parse(input);
+    let result = yara::parser::rule().parse(input);
     alert(&format!("Parsed: {:#?}!", result));
 }
