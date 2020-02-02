@@ -121,12 +121,25 @@ fn c_identifier() -> Parser<u8, YaraCondition> {
     identifier().map(|i|YaraCondition::Identifier(i))
 }
 
-fn conditions() -> Parser<u8, YaraCondition> {
-    let p_or = (c_identifier() | call(conditions)) - (space() * seq(b"or") * space()) + (call(conditions) | c_identifier());
-    let or = p_or.map(|c|YaraCondition::Or(Box::new(c.0), Box::new(c.1)));
+fn c_and() -> Parser<u8, YaraCondition> {
     let p_and = (c_identifier() | call(conditions)) - (space() * seq(b"and") * space()) + (call(conditions) | c_identifier());
-    let and = p_and.map(|c|YaraCondition::And(Box::new(c.0), Box::new(c.1)));
-    (space() * sym(b'(').opt() * space()) * (and | or | c_identifier()) - (space() * sym(b')').opt() * space())
+    p_and.map(|c|YaraCondition::And(Box::new(c.0), Box::new(c.1)))
+}
+
+fn c_or() -> Parser<u8, YaraCondition> {
+    let p_or = (c_identifier() | call(conditions)) - (space() * seq(b"or") * space()) + (call(conditions) | c_identifier());
+    p_or.map(|c|YaraCondition::Or(Box::new(c.0), Box::new(c.1)))
+}
+
+fn conditions() -> Parser<u8, YaraCondition> {
+    let open_b = || space() * sym(b'(') * space();
+    let close_b = || space() * sym(b')') * space();
+    let subcondition = || ((open_b()) * (c_and() | c_or()) - (close_b()));
+    let sub_and = subcondition() - (space() * seq(b"and") * space()) + (call(conditions) | c_identifier());
+    let p_sub_and = sub_and.map(|c|YaraCondition::And(Box::new(c.0), Box::new(c.1)));
+    let sub_or = subcondition() - (space() * seq(b"or") * space()) + (call(conditions) | c_identifier());
+    let p_sub_or = sub_or.map(|c|YaraCondition::Or(Box::new(c.0), Box::new(c.1)));
+    (p_sub_and | p_sub_or | subcondition()) | (c_and() | c_or() | c_identifier())
 }
 
 fn s_conditions() -> Parser<u8, YaraSections> {
@@ -159,7 +172,29 @@ rule rule_name
         $b = { AB [0-2] ?D }
         $c = "abcd"
     condition:
-        $a or ($b and $c)
+        $a or $b or $c
+}
+        "#;
+        let result = rule().parse(input);
+	      assert!(result.is_ok(), format!("Example failed to parse: {:#?}", result));
+        println!("{:#?}", result.unwrap())
+    }
+    #[test]
+    fn parse_tricky_condition_example() {
+        let input = br#"
+rule rule_name
+{
+    meta:
+        description = "This is just an example"
+        priority = 5
+        enabled = true
+    strings:
+        $a = "123"
+        $b = { AB [0-2] ?D }
+        $c = "abcd"
+        $d = "asdf"
+    condition:
+        ($a or ($b and $c)) or $d
 }
         "#;
         let result = rule().parse(input);
