@@ -31,10 +31,18 @@ pub enum YaraStrings {
     Hex(Vec<YaraHex>)
 }
 
+#[derive(Debug, PartialEq)]
+pub enum YaraCondition {
+    Identifier(YaraIdentifier),
+    Or(Box<YaraCondition>, Box<YaraCondition>),
+    And(Box<YaraCondition>, Box<YaraCondition>)
+}
+
 #[derive(Debug)]
 pub enum YaraSections {
     Meta(HashMap<YaraIdentifier, YaraMetaValues>),
     Strings(HashMap<YaraIdentifier, YaraStrings>),
+    Condition(YaraCondition)
 }
 
 #[derive(Debug)]
@@ -109,8 +117,25 @@ fn strings() -> Parser<u8, YaraSections> {
 	  strings.map(|members|members.into_iter().collect::<HashMap<_,_>>()).map(|s|YaraSections::Strings(s))
 }
 
+fn c_identifier() -> Parser<u8, YaraCondition> {
+    identifier().map(|i|YaraCondition::Identifier(i))
+}
+
+fn conditions() -> Parser<u8, YaraCondition> {
+    let p_or = (c_identifier() | call(conditions)) - (space() * seq(b"or") * space()) + (call(conditions) | c_identifier());
+    let or = p_or.map(|c|YaraCondition::Or(Box::new(c.0), Box::new(c.1)));
+    let p_and = (c_identifier() | call(conditions)) - (space() * seq(b"and") * space()) + (call(conditions) | c_identifier());
+    let and = p_and.map(|c|YaraCondition::And(Box::new(c.0), Box::new(c.1)));
+    (space() * sym(b'(').opt() * space()) * (and | or | c_identifier()) - (space() * sym(b')').opt() * space())
+}
+
+fn s_conditions() -> Parser<u8, YaraSections> {
+    let conditions = space() * seq(b"condition:") * conditions();
+    conditions.map(|c|YaraSections::Condition(c))
+}
+
 pub fn rule() -> Parser<u8, YaraRule> {
-    let sections = meta() | strings();
+    let sections = meta() | strings() | s_conditions();
     let rule_name = seq(b"rule") * identifier();
     let rule = (space() * rule_name - sym(b'{')) + (sections.repeat(0..) - sym(b'}') - space());
     rule.map(|r|YaraRule{name: r.0, sections: r.1})
@@ -130,8 +155,11 @@ rule rule_name
         priority = 5
         enabled = true
     strings:
+        $a = "123"
         $b = { AB [0-2] ?D }
         $c = "abcd"
+    condition:
+        $a or ($b and $c)
 }
         "#;
         let result = rule().parse(input);
