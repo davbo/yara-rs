@@ -46,8 +46,8 @@ pub enum YaraSections {
 
 #[derive(Debug)]
 pub struct YaraRule {
-    name: YaraIdentifier,
-    sections: Vec<YaraSections>
+    pub name: YaraIdentifier,
+    pub sections: Vec<YaraSections>
 }
 
 fn space<'a>() -> Parser<'a, u8, ()> {

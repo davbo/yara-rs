@@ -7,12 +7,11 @@ with import <nixpkgs> {
 stdenv.mkDerivation {
   name = "rust-env";
   nativeBuildInputs = [
-    nodejs
-    wasm-pack
   ];
   buildInputs = [
     # Example Run-time Additional Dependencies
     (latest.rustChannels.nightly.rust.override {
+      extensions = [ "rls-preview" ];
       targets = ["wasm32-unknown-unknown"];
     })
   ];
