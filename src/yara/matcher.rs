@@ -2,7 +2,17 @@ use crate::yara::parser::{YaraIdentifier, YaraRule, YaraSections, YaraStrings};
 use std::collections::HashMap;
 
 impl YaraRule {
-    fn check_strings(&self, strings: &HashMap<YaraIdentifier, YaraStrings>, payload: &[u8]) -> bool {
+  fn strings(&self) -> &HashMap<YaraIdentifier, YaraStrings> {
+      for section in &self.sections {
+          match section {
+              YaraSections::Strings(strings) => return strings,
+              _ => continue
+          }
+      };
+      panic!()
+  }
+
+  fn check_strings(&self, strings: &HashMap<YaraIdentifier, YaraStrings>, payload: &[u8]) -> bool {
         for (_, strs) in strings {
             if match strs {
                 YaraStrings::Str(s) => payload.windows(s.len()).position(|win| win == s.as_bytes()).is_some(),
