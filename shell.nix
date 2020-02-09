@@ -10,7 +10,7 @@ stdenv.mkDerivation {
   ];
   buildInputs = [
     # Example Run-time Additional Dependencies
-    (latest.rustChannels.nightly.rust.override {
+    ((rustChannelOf { date = "2020-02-07"; channel = "nightly"; }).rust.override {
       extensions = [ "rls-preview" ];
       targets = ["wasm32-unknown-unknown"];
     })
