@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>yara_rs demo</title>
+  </head>
+  <body>
+    <script type="module">
+     import init, { parse } from '../pkg/yara_rs.js';
+     async function run() {
+       await init();
+       parse();
+     }
+     run();
+    </script>
+  </body>
+</html>

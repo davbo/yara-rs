@@ -14,6 +14,7 @@ stdenv.mkDerivation {
       extensions = [ "rls-preview" ];
       targets = ["wasm32-unknown-unknown"];
     })
+    wasm-pack
   ];
 
   # Set Environment Variables
