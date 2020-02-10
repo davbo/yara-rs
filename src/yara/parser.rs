@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 const HEX: &'static [u8; 16] = b"0123456789ABCDEF";
 
-#[derive(Debug, PartialEq, Hash, Eq)]
+#[derive(Debug, PartialEq, Hash, Eq, Clone)]
 pub enum YaraIdentifier {
     Str(String)
 }

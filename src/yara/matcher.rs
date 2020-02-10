@@ -12,19 +12,17 @@ impl YaraRule {
         panic!()
     }
 
-    fn check_strings(&self, payload: &[u8]) -> bool {
-        let strings = self.strings();
-        for (_, strs) in strings {
-            if match strs {
-                YaraStrings::Str(s) => payload.windows(s.len()).position(|win| win == s.as_bytes()).is_some(),
-                _ => false
-            } { return true }
-        }
-        false
+    fn check_strings(&self, payload: &[u8]) -> HashMap<YaraIdentifier, bool> {
+        self.strings().iter().map(|(id, strs)| {
+            match strs {
+                YaraStrings::Str(s) => (id.clone(), payload.windows(s.len()).position(|win| win == s.as_bytes()).is_some()),
+                _ => (id.clone(), false)
+            }
+        }).collect()
     }
 
     pub fn matches(&self, payload: &[u8]) -> bool {
-        self.check_strings(payload)
+        self.check_strings(payload).iter().any(|(_, val)| *val)
     }
 }
 
