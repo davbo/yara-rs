@@ -1,8 +1,20 @@
 use crate::yara::parser::{YaraIdentifier, YaraRule, YaraSections, YaraStrings, YaraHex};
 use std::collections::HashMap;
+use hex;
+use regex;
 
 fn check_hex(test_hex: &Vec<YaraHex>, payload: &[u8]) -> bool {
-    true
+    let hex_string = hex::encode(payload);
+    let test_hex_string: String = test_hex.iter().map(|h| {
+        match h {
+            YaraHex::Byte(b) => std::str::from_utf8(&[*b]).unwrap().to_ascii_lowercase(),
+            YaraHex::Jump(start, end) => format!("[0-9a-f]{{{},{}}}", start, end),
+            YaraHex::Wildcard => "[0-9a-f]".to_string(),
+        }
+    }).collect();
+    println!("{} - {}", hex_string, test_hex_string);
+    let re = regex::Regex::new(&test_hex_string).unwrap();
+    re.is_match(&hex_string)
 }
 
 impl YaraRule {
@@ -66,8 +78,8 @@ rule rule_name
         enabled = true
     strings:
         $a = "123"
-        $b = { AB [0-2] ?D }
-        $c = "bar"
+        $b = { 66 [0-9] 7? }
+        $c = "oops"
     condition:
         $a or $b or $c
 }
@@ -77,6 +89,6 @@ rule rule_name
             result.is_ok(),
             format!("Example failed to parse: {:#?}", result)
         );
-        assert!(result.unwrap().matches(b"foo AB__CD baz"));
+        assert!(result.unwrap().matches(b"foo bar baz"));
   }
 }

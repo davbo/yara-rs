@@ -87,7 +87,7 @@ fn st_hex<'a>() -> Parser<'a, u8, YaraStrings> {
     let wildcard = sym(b'?').map(|_|YaraHex::Wildcard);
     let jump = (sym(b'[') * space()) * opt_integer() - sym(b'-') + opt_integer() - (space() - sym(b']'));
     let jump_res = jump.map(|j|YaraHex::Jump(j.0, j.1));
-    let byte = one_of(HEX).map(|b|YaraHex::Byte(HEX.iter().position(|&a| a == b ).unwrap() as u8));
+    let byte = one_of(HEX).map(|b|YaraHex::Byte(b));
     let hex_string = list(byte | jump_res | wildcard, space());
     let pattern = (sym(b'{') - space()) * hex_string - (space() - sym(b'}'));
     pattern.map(|s|YaraStrings::Hex(s))

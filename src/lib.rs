@@ -17,7 +17,7 @@ rule test
     meta:
         description = "This is just an example"
     strings:
-        $a = "bar"
+        $a = { 66 [0-9] 7? }
     condition:
         $a
 }
