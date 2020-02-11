@@ -6,12 +6,12 @@ use wasm_bindgen::prelude::*;
 // Import the `window.alert` function from the Web.
 #[wasm_bindgen]
 extern "C" {
-  fn alert(s: &str);
+    fn alert(s: &str);
 }
 
 #[wasm_bindgen]
 pub fn parse() {
-  let input = br#"
+    let input = br#"
 rule test
 {
     meta:
@@ -22,7 +22,10 @@ rule test
         $a
 }
         "#;
-  let result = yara::parser::rule().parse(input);
-  alert(&format!("Parsed: {:#?}!", result));
-  alert(&format!("Matches: {:#?}!", result.unwrap().matches(b"foo bar baz")));
+    let result = yara::parser::rule().parse(input);
+    alert(&format!("Parsed: {:#?}!", result));
+    alert(&format!(
+        "Matches: {:#?}!",
+        result.unwrap().matches(b"foo bar baz")
+    ));
 }

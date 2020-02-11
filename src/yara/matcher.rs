@@ -1,17 +1,18 @@
-use crate::yara::parser::{YaraIdentifier, YaraRule, YaraSections, YaraStrings, YaraHex};
-use std::collections::HashMap;
+use crate::yara::parser::{YaraHex, YaraIdentifier, YaraRule, YaraSections, YaraStrings};
 use hex;
 use regex;
+use std::collections::HashMap;
 
 fn check_hex(test_hex: &Vec<YaraHex>, payload: &[u8]) -> bool {
     let hex_string = hex::encode(payload);
-    let test_hex_string: String = test_hex.iter().map(|h| {
-        match h {
+    let test_hex_string: String = test_hex
+        .iter()
+        .map(|h| match h {
             YaraHex::Byte(b) => std::str::from_utf8(&[*b]).unwrap().to_ascii_lowercase(),
             YaraHex::Jump(start, end) => format!("[0-9a-f]{{{},{}}}", start, end),
             YaraHex::Wildcard => "[0-9a-f]".to_string(),
-        }
-    }).collect();
+        })
+        .collect();
     println!("{} - {}", hex_string, test_hex_string);
     let re = regex::Regex::new(&test_hex_string).unwrap();
     re.is_match(&hex_string)
@@ -22,19 +23,26 @@ impl YaraRule {
         for section in &self.sections {
             match section {
                 YaraSections::Strings(strings) => return strings,
-                _ => continue
+                _ => continue,
             }
-        };
+        }
         panic!()
     }
 
     fn check_strings(&self, payload: &[u8]) -> HashMap<YaraIdentifier, bool> {
-        self.strings().iter().map(|(id, strs)| {
-            match strs {
-                YaraStrings::Str(s) => (id.clone(), payload.windows(s.len()).position(|win| win == s.as_bytes()).is_some()),
+        self.strings()
+            .iter()
+            .map(|(id, strs)| match strs {
+                YaraStrings::Str(s) => (
+                    id.clone(),
+                    payload
+                        .windows(s.len())
+                        .position(|win| win == s.as_bytes())
+                        .is_some(),
+                ),
                 YaraStrings::Hex(h) => (id.clone(), check_hex(h, payload)),
-            }
-        }).collect()
+            })
+            .collect()
     }
 
     pub fn matches(&self, payload: &[u8]) -> bool {
@@ -46,7 +54,7 @@ impl YaraRule {
 mod tests {
     use crate::yara::parser;
     #[test]
-    fn parse_basic_example() {
+    fn matches_strings() {
         let input = br#"
 rule rule_name
 {
@@ -63,12 +71,15 @@ rule rule_name
 }
         "#;
         let result = parser::rule().parse(input);
-	      assert!(result.is_ok(), format!("Example failed to parse: {:#?}", result));
+        assert!(
+            result.is_ok(),
+            format!("Example failed to parse: {:#?}", result)
+        );
         assert!(result.unwrap().matches(b"foo bar baz"));
     }
 
     #[test]
-    fn match_hex_example() {
+    fn matches_hex() {
         let input = br#"
 rule rule_name
 {
@@ -90,5 +101,5 @@ rule rule_name
             format!("Example failed to parse: {:#?}", result)
         );
         assert!(result.unwrap().matches(b"foo bar baz"));
-  }
+    }
 }
