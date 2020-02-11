@@ -1,4 +1,4 @@
-use crate::yara::parser::{YaraHex, YaraIdentifier, YaraRule, YaraSections, YaraStrings};
+use crate::yara::parser::{YaraHex, YaraIdentifier, YaraRule, YaraSections, YaraStrings, YaraCondition};
 use hex;
 use regex;
 use std::collections::HashMap;
@@ -19,10 +19,20 @@ fn check_hex(test_hex: &Vec<YaraHex>, payload: &[u8]) -> bool {
 }
 
 impl YaraRule {
-    fn strings(&self) -> &HashMap<YaraIdentifier, YaraStrings> {
+  fn strings(&self) -> &HashMap<YaraIdentifier, YaraStrings> {
         for section in &self.sections {
             match section {
                 YaraSections::Strings(strings) => return strings,
+                _ => continue,
+            }
+        }
+        panic!()
+    }
+
+    fn conditions(&self) -> &YaraCondition {
+        for section in &self.sections {
+            match section {
+                YaraSections::Condition(condition) => return condition,
                 _ => continue,
             }
         }
@@ -45,8 +55,17 @@ impl YaraRule {
             .collect()
     }
 
+    fn evaluate(&self, matches: &HashMap<YaraIdentifier, bool>, cond: &YaraCondition) -> bool {
+        match cond {
+            YaraCondition::Identifier(id) => *matches.get(id).unwrap(),
+            YaraCondition::And(l, r) => self.evaluate(matches, &*l) && self.evaluate(matches, &*r),
+            YaraCondition::Or(l, r) => self.evaluate(matches, &*l) || self.evaluate(matches, &*r),
+        }
+    }
+
     pub fn matches(&self, payload: &[u8]) -> bool {
-        self.check_strings(payload).iter().any(|(_, val)| *val)
+        let matches = self.check_strings(payload);
+        self.evaluate(&matches, self.conditions())
     }
 }
 
