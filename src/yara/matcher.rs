@@ -1,4 +1,6 @@
-use crate::yara::parser::{YaraHex, YaraIdentifier, YaraRule, YaraSections, YaraStrings, YaraCondition};
+use crate::yara::parser::{
+    YaraCondition, YaraHex, YaraIdentifier, YaraRule, YaraSections, YaraStrings,
+};
 use hex;
 use regex;
 use std::collections::HashMap;
@@ -19,7 +21,7 @@ fn check_hex(test_hex: &Vec<YaraHex>, payload: &[u8]) -> bool {
 }
 
 impl YaraRule {
-  fn strings(&self) -> &HashMap<YaraIdentifier, YaraStrings> {
+    fn strings(&self) -> &HashMap<YaraIdentifier, YaraStrings> {
         for section in &self.sections {
             match section {
                 YaraSections::Strings(strings) => return strings,
