@@ -1,0 +1,26 @@
+{
+  "manifest_version": 2,
+  "name": "yara_rs",
+  "description": "Test out some Yara signatures against wasm binaries.",
+  "version": "0.1.0",
+  "browser_action": {
+    "default_icon": {
+      "32": "icons/icon-32.png"
+    },
+    "default_title": "yara wasm",
+    "default_popup": "popup.html"
+  },
+  "permissions": ["webRequest", "webRequestBlocking", "<all_urls>"],
+  "content_security_policy": "default-src 'self'",
+  "background": {
+    "page": "background.html"
+  },
+  "icons": {
+    "32": "icons/icon-32.png"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "strict_min_version": "62.0b5"
+    }
+  }
+}
