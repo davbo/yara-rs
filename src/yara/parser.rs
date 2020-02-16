@@ -1,6 +1,6 @@
 extern crate pom;
 use pom::parser::*;
-
+use std::fmt;
 use std::collections::HashMap;
 
 const HEX: &'static [u8; 16] = b"0123456789ABCDEF";
@@ -8,6 +8,14 @@ const HEX: &'static [u8; 16] = b"0123456789ABCDEF";
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
 pub enum YaraIdentifier {
     Str(String),
+}
+
+impl fmt::Display for YaraIdentifier {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+      match self {
+          YaraIdentifier::Str(s) => write!(f, "{}", s)
+      }
+  }
 }
 
 #[derive(Debug, PartialEq)]
@@ -231,6 +239,27 @@ rule rule_name
         ($a or ($b and $c)) or $d
 }
         "#;
+        let result = rule().parse(input);
+        assert!(
+            result.is_ok(),
+            format!("Example failed to parse: {:#?}", result)
+        );
+    }
+    #[test]
+    fn parse_add_example() {
+        let input = br#"
+rule add
+{
+    meta:
+        description = "Add example wasm file"
+    strings:
+        $a = { 00 61 73 6D }
+        $b = { 61 64 64 }
+    condition:
+        ($a and $b)
+}
+        "#;
+
         let result = rule().parse(input);
         assert!(
             result.is_ok(),

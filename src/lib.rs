@@ -3,10 +3,21 @@ extern crate wasm_bindgen;
 
 use wasm_bindgen::prelude::*;
 
-// Import the `window.alert` function from the Web.
 #[wasm_bindgen]
 extern "C" {
-    fn alert(s: &str);
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+}
+
+
+#[wasm_bindgen]
+pub fn yara_match(rules: &str, payload: &[u8]) -> bool {
+    let rule = yara::parser::rule().parse(rules.as_bytes()).unwrap();
+    let result = rule.matches(payload);
+    if result {
+        log(&format!("Match against rule: {}", rule.name));
+    }
+    result
 }
 
 #[wasm_bindgen]
@@ -23,8 +34,8 @@ rule test
 }
         "#;
     let result = yara::parser::rule().parse(input);
-    alert(&format!("Parsed: {:#?}!", result));
-    alert(&format!(
+    log(&format!("Parsed: {:#?}!", result));
+    log(&format!(
         "Matches: {:#?}!",
         result.unwrap().matches(b"foo bar baz")
     ));
