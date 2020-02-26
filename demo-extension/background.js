@@ -37,6 +37,6 @@ async function callback(details) {
 Listen for all onHeadersReceived events.
 */
 browser.webRequest.onHeadersReceived.addListener(callback,
-  {urls: ["<all_urls>"]},
-  ["blocking"]
+  {urls: ["*://*/*.wasm"]},
+  ["blocking", "responseHeaders"]
 );

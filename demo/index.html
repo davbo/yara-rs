@@ -6,12 +6,37 @@
   </head>
   <body>
     <script type="module">
-     import init, { parse } from '../pkg/yara_rs.js';
+     import init, { yara_match } from '../pkg/yara_rs.js';
      async function run() {
        await init();
-       parse();
+
+       let instantiate = WebAssembly.instantiate;
+       WebAssembly.instantiate = function(bytes, imports) {
+         let view = new Uint8Array(bytes);
+         let match = yara_match(`
+      rule cryptonight
+      {
+        meta:
+          description = "Crytonight Miner"
+        strings:
+          $a = { 00 61 73 6D }
+          $b = { 63 72 79 70 74 6F 6E 69 67 68 74 5F 68 61 73 68 }
+        condition:
+          $a and $b
+      }`, view);
+         if (match) {
+           throw new Error("Matched yara Rule");
+         } else {
+           instantiate(bytes, imports);
+         }
+       }
+
+       fetch('http://0.0.0.0:3030/sample-miners/nightcrypto.wasm')
+         .then(r => r.arrayBuffer())
+         .then(bytes => WebAssembly.instantiate(bytes, {}));
      }
      run();
+
     </script>
   </body>
 </html>
