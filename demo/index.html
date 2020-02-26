@@ -31,7 +31,7 @@
          }
        }
 
-       fetch('http://0.0.0.0:3030/sample-miners/nightcrypto.wasm')
+       fetch('/sample-miners/nightcrypto.wasm')
          .then(r => r.arrayBuffer())
          .then(bytes => WebAssembly.instantiate(bytes, {}));
      }
