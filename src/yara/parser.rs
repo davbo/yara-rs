@@ -1,7 +1,7 @@
 extern crate pom;
-use pom::parser::*;
-use std::fmt;
+use pom::parser::{call, list, none_of, one_of, seq, sym, empty, Parser};
 use std::collections::HashMap;
+use std::fmt;
 
 const HEX: &'static [u8; 16] = b"0123456789ABCDEF";
 
@@ -11,11 +11,11 @@ pub enum YaraIdentifier {
 }
 
 impl fmt::Display for YaraIdentifier {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-      match self {
-          YaraIdentifier::Str(s) => write!(f, "{}", s)
-      }
-  }
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            YaraIdentifier::Str(s) => write!(f, "{}", s),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -32,10 +32,24 @@ pub enum YaraMetaValues {
     Int(usize),
 }
 
+
+#[derive(Debug, PartialEq)]
+pub enum YaraStringsModifier {
+    None,
+    Nocase,
+    Wide,
+    ASCII,
+    XOR,
+    Base64,
+    Base64Wide,
+    Fullword,
+    Private,
+}
+
 #[derive(Debug, PartialEq)]
 pub enum YaraStrings {
-    Str(String),
-    Hex(Vec<YaraHex>),
+    Str(String, YaraStringsModifier),
+    Hex(Vec<YaraHex>, YaraStringsModifier),
 }
 
 #[derive(Debug, PartialEq)]
@@ -98,8 +112,21 @@ fn meta_string<'a>() -> Parser<'a, u8, YaraMetaValues> {
     string().map(|s| YaraMetaValues::Str(s))
 }
 
+fn opt_modifier<'a>() -> Parser<'a, u8, YaraStringsModifier> {
+    seq(b"nocase").map(|_| YaraStringsModifier::Nocase)
+        | seq(b"wide").map(|_| YaraStringsModifier::Wide)
+        | seq(b"ascii").map(|_| YaraStringsModifier::ASCII)
+        | seq(b"xor").map(|_| YaraStringsModifier::XOR)
+        | seq(b"base64").map(|_| YaraStringsModifier::Base64)
+        | seq(b"base64wide").map(|_| YaraStringsModifier::Base64Wide)
+        | seq(b"fullword").map(|_| YaraStringsModifier::Fullword)
+        | seq(b"private").map(|_| YaraStringsModifier::Private)
+        | empty().map(|_| YaraStringsModifier::None)
+}
+
 fn st_string<'a>() -> Parser<'a, u8, YaraStrings> {
-    string().map(|s| YaraStrings::Str(s))
+    let modified_string = string() - space() + opt_modifier();
+    modified_string.map(|(s,m)| YaraStrings::Str(s,m))
 }
 
 fn st_hex<'a>() -> Parser<'a, u8, YaraStrings> {
@@ -110,7 +137,8 @@ fn st_hex<'a>() -> Parser<'a, u8, YaraStrings> {
     let byte = one_of(HEX).map(|b| YaraHex::Byte(b));
     let hex_string = list(byte | jump_res | wildcard, space());
     let pattern = (sym(b'{') - space()) * hex_string - (space() - sym(b'}'));
-    pattern.map(|s| YaraStrings::Hex(s))
+    let modified_pattern = pattern - space() + opt_modifier();
+    modified_pattern.map(|(h,m)| YaraStrings::Hex(h,m))
 }
 
 fn boolean<'a>() -> Parser<'a, u8, YaraMetaValues> {
@@ -190,6 +218,7 @@ pub fn rule<'a>() -> Parser<'a, u8, YaraRule> {
     })
 }
 
+#[allow(dead_code)]
 pub fn parse_rules<'a>(input: &'a [u8]) -> Result<Vec<YaraRule>, pom::Error> {
     list(rule(), space()).parse(input)
 }
@@ -261,6 +290,7 @@ rule add
         "#;
 
         let result = rule().parse(input);
+        println!("{:#?}", result);
         assert!(
             result.is_ok(),
             format!("Example failed to parse: {:#?}", result)
@@ -270,6 +300,28 @@ rule add
     fn parse_apple_rules() {
         let apple_rules = fs::read("tests/rules.yara").expect("unable to open file");
         let result = parse_rules(&apple_rules[..]);
+        assert!(
+            result.is_ok(),
+            format!("Example failed to parse: {:#?}", result)
+        );
+    }
+    #[test]
+    fn parse_string_modifiers() {
+        let input = br#"
+rule rule_name
+{
+    meta:
+        description = "This is just an example"
+        priority = 5
+        enabled = true
+    strings:
+        $a = "foobar" nocase
+        $b = { AB [0-2] ?D } private
+    condition:
+        $a or $b or $c
+}
+        "#;
+        let result = rule().parse(input);
         assert!(
             result.is_ok(),
             format!("Example failed to parse: {:#?}", result)
