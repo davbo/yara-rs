@@ -45,12 +45,13 @@ impl YaraRule {
         self.strings()
             .iter()
             .map(|(id, strs)| match strs {
+                YaraStrings::Regex(s,_) => (
+                    id.clone(),
+                    regex::bytes::Regex::new(s).unwrap().is_match(payload)
+                ),
                 YaraStrings::Str(s,_) => (
                     id.clone(),
-                    payload
-                        .windows(s.len())
-                        .position(|win| win == s.as_bytes())
-                        .is_some(),
+                    regex::bytes::Regex::new(&regex::escape(s)).unwrap().is_match(payload)
                 ),
                 YaraStrings::Hex(h,_) => (id.clone(), check_hex(h, payload)),
             })

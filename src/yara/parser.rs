@@ -49,6 +49,7 @@ pub enum YaraStringsModifier {
 #[derive(Debug, PartialEq)]
 pub enum YaraStrings {
     Str(String, YaraStringsModifier),
+    Regex(String, YaraStringsModifier),
     Hex(Vec<YaraHex>, YaraStringsModifier),
 }
 
@@ -129,6 +130,20 @@ fn st_string<'a>() -> Parser<'a, u8, YaraStrings> {
     modified_string.map(|(s,m)| YaraStrings::Str(s,m))
 }
 
+fn st_regex<'a>() -> Parser<'a, u8, YaraStrings> {
+    let special_char = sym(b'\\')
+        | sym(b'/')
+        | sym(b'"')
+        | sym(b'n').map(|_| b'\n')
+        | sym(b'r').map(|_| b'\r')
+        | sym(b't').map(|_| b'\t');
+    let escape_sequence = sym(b'\\') * special_char;
+    let regexp = sym(b'/') * (none_of(b"\\/") | escape_sequence).repeat(0..) - sym(b'/');
+    let regex_str = regexp.convert(String::from_utf8);
+    let modified_regexp = regex_str - space() + opt_modifier();
+    modified_regexp.map(|(s,m)| YaraStrings::Regex(s,m))
+}
+
 fn st_hex<'a>() -> Parser<'a, u8, YaraStrings> {
     let wildcard = sym(b'?').map(|_| YaraHex::Wildcard);
     let jump =
@@ -166,7 +181,7 @@ fn meta<'a>() -> Parser<'a, u8, YaraSections> {
 }
 
 fn strings<'a>() -> Parser<'a, u8, YaraSections> {
-    let member = identifier() - space() - sym(b'=') - space() + (st_string() | st_hex());
+    let member = identifier() - space() - sym(b'=') - space() + (st_string() | st_hex() | st_regex());
     let members = list(member, space());
     let strings = space() * seq(b"strings:") * space() * members - space();
     strings
@@ -319,6 +334,28 @@ rule rule_name
         $b = { AB [0-2] ?D } private
     condition:
         $a or $b or $c
+}
+        "#;
+        let result = rule().parse(input);
+        assert!(
+            result.is_ok(),
+            format!("Example failed to parse: {:#?}", result)
+        );
+    }
+    #[test]
+    fn parse_regex() {
+        let input = br#"
+rule rule_name
+{
+    meta:
+        description = "This is just an example"
+        priority = 5
+        enabled = true
+    strings:
+        $a = /foo.ar/ nocase
+        $b = /foo\/ar/ nocase
+    condition:
+        $a
 }
         "#;
         let result = rule().parse(input);
