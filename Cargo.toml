@@ -1,5 +1,5 @@
 [package]
-name = "yara-rs"
+name = "yara"
 version = "0.1.0"
 authors = ["Dave King <dave@davbo.uk>"]
 edition = "2018"
