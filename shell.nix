@@ -7,6 +7,7 @@ stdenv.mkDerivation {
   ];
   buildInputs = [
     rustup
+    libiconv
     wasm-pack
   ];
 

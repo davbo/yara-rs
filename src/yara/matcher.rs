@@ -95,7 +95,7 @@ rule rule_name
         let result = parser::rule().parse(input);
         assert!(
             result.is_ok(),
-            format!("Example failed to parse: {:#?}", result)
+            "Example failed to parse: {:#?}", result
         );
         assert!(result.unwrap().matches(b"foo bar baz"));
     }
@@ -120,7 +120,7 @@ rule rule_name
         let result = parser::rule().parse(input);
         assert!(
             result.is_ok(),
-            format!("Example failed to parse: {:#?}", result)
+            r#"Example failed to parse: {:#?}"#, result
         );
         assert!(result.unwrap().matches(b"foo bar baz"));
     }

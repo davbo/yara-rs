@@ -1,5 +1,5 @@
 extern crate pom;
-use pom::parser::{call, list, none_of, one_of, seq, sym, empty, Parser};
+use pom::parser::{call, empty, list, none_of, one_of, seq, sym, Parser};
 use std::collections::HashMap;
 use std::fmt;
 
@@ -31,7 +31,6 @@ pub enum YaraMetaValues {
     Bool(bool),
     Int(usize),
 }
-
 
 #[derive(Debug, PartialEq)]
 pub enum YaraStringsModifier {
@@ -127,7 +126,7 @@ fn opt_modifier<'a>() -> Parser<'a, u8, YaraStringsModifier> {
 
 fn st_string<'a>() -> Parser<'a, u8, YaraStrings> {
     let modified_string = string() - space() + opt_modifier();
-    modified_string.map(|(s,m)| YaraStrings::Str(s,m))
+    modified_string.map(|(s, m)| YaraStrings::Str(s, m))
 }
 
 fn st_regex<'a>() -> Parser<'a, u8, YaraStrings> {
@@ -141,7 +140,7 @@ fn st_regex<'a>() -> Parser<'a, u8, YaraStrings> {
     let regexp = sym(b'/') * (none_of(b"\\/") | escape_sequence).repeat(0..) - sym(b'/');
     let regex_str = regexp.convert(String::from_utf8);
     let modified_regexp = regex_str - space() + opt_modifier();
-    modified_regexp.map(|(s,m)| YaraStrings::Regex(s,m))
+    modified_regexp.map(|(s, m)| YaraStrings::Regex(s, m))
 }
 
 fn st_hex<'a>() -> Parser<'a, u8, YaraStrings> {
@@ -153,7 +152,7 @@ fn st_hex<'a>() -> Parser<'a, u8, YaraStrings> {
     let hex_string = list(byte | jump_res | wildcard, space());
     let pattern = (sym(b'{') - space()) * hex_string - (space() - sym(b'}'));
     let modified_pattern = pattern - space() + opt_modifier();
-    modified_pattern.map(|(h,m)| YaraStrings::Hex(h,m))
+    modified_pattern.map(|(h, m)| YaraStrings::Hex(h, m))
 }
 
 fn boolean<'a>() -> Parser<'a, u8, YaraMetaValues> {
@@ -181,7 +180,8 @@ fn meta<'a>() -> Parser<'a, u8, YaraSections> {
 }
 
 fn strings<'a>() -> Parser<'a, u8, YaraSections> {
-    let member = identifier() - space() - sym(b'=') - space() + (st_string() | st_hex() | st_regex());
+    let member =
+        identifier() - space() - sym(b'=') - space() + (st_string() | st_hex() | st_regex());
     let members = list(member, space());
     let strings = space() * seq(b"strings:") * space() * members - space();
     strings
@@ -262,7 +262,7 @@ rule rule_name
         let result = rule().parse(input);
         assert!(
             result.is_ok(),
-            format!("Example failed to parse: {:#?}", result)
+            "Example failed to parse: {:#?}", result
         );
     }
     #[test]
@@ -286,7 +286,7 @@ rule rule_name
         let result = rule().parse(input);
         assert!(
             result.is_ok(),
-            format!("Example failed to parse: {:#?}", result)
+            "Example failed to parse: {:#?}", result
         );
     }
     #[test]
@@ -308,7 +308,7 @@ rule add
         println!("{:#?}", result);
         assert!(
             result.is_ok(),
-            format!("Example failed to parse: {:#?}", result)
+            "Example failed to parse: {:#?}", result
         );
     }
     #[test]
@@ -317,7 +317,7 @@ rule add
         let result = parse_rules(&apple_rules[..]);
         assert!(
             result.is_ok(),
-            format!("Example failed to parse: {:#?}", result)
+            "Example failed to parse: {:#?}", result
         );
     }
     #[test]
@@ -339,7 +339,7 @@ rule rule_name
         let result = rule().parse(input);
         assert!(
             result.is_ok(),
-            format!("Example failed to parse: {:#?}", result)
+            "Example failed to parse: {:#?}", result
         );
     }
     #[test]
@@ -361,7 +361,7 @@ rule rule_name
         let result = rule().parse(input);
         assert!(
             result.is_ok(),
-            format!("Example failed to parse: {:#?}", result)
+            "Example failed to parse: {:#?}", result
         );
     }
 }
