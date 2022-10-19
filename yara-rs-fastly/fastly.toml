@@ -1,0 +1,14 @@
+authors = ["dave@davbo.fi"]
+description = "Testing out fastly compute@edge wasm"
+language = "rust"
+manifest_version = 2
+name = "Yara Demo"
+service_id = "36mWmpYAm8ezh43Tr37JAF"
+[setup]
+  [setup.backends]
+    [setup.backends.bucket_origin]
+      url = "https://storage.googleapis.com"
+[local_server]
+  [local_server.backends]
+    [local_server.backends.bucket_origin]
+      url = "https://storage.googleapis.com"

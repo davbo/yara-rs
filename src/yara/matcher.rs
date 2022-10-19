@@ -28,7 +28,7 @@ impl YaraRule {
                 _ => continue,
             }
         }
-        panic!()
+        panic!("oops")
     }
 
     fn conditions(&self) -> &YaraCondition {
@@ -45,15 +45,17 @@ impl YaraRule {
         self.strings()
             .iter()
             .map(|(id, strs)| match strs {
-                YaraStrings::Regex(s,_) => (
+                YaraStrings::Regex(s, _) => (
                     id.clone(),
-                    regex::bytes::Regex::new(s).unwrap().is_match(payload)
+                    regex::bytes::Regex::new(s).unwrap().is_match(payload),
                 ),
-                YaraStrings::Str(s,_) => (
+                YaraStrings::Str(s, _) => (
                     id.clone(),
-                    regex::bytes::Regex::new(&regex::escape(s)).unwrap().is_match(payload)
+                    regex::bytes::Regex::new(&regex::escape(s))
+                        .unwrap()
+                        .is_match(payload),
                 ),
-                YaraStrings::Hex(h,_) => (id.clone(), check_hex(h, payload)),
+                YaraStrings::Hex(h, _) => (id.clone(), check_hex(h, payload)),
             })
             .collect()
     }
@@ -93,10 +95,7 @@ rule rule_name
 }
         "#;
         let result = parser::rule().parse(input);
-        assert!(
-            result.is_ok(),
-            "Example failed to parse: {:#?}", result
-        );
+        assert!(result.is_ok(), "Example failed to parse: {:#?}", result);
         assert!(result.unwrap().matches(b"foo bar baz"));
     }
 
@@ -118,10 +117,7 @@ rule rule_name
 }
         "#;
         let result = parser::rule().parse(input);
-        assert!(
-            result.is_ok(),
-            r#"Example failed to parse: {:#?}"#, result
-        );
+        assert!(result.is_ok(), r#"Example failed to parse: {:#?}"#, result);
         assert!(result.unwrap().matches(b"foo bar baz"));
     }
 }

@@ -13,3 +13,7 @@ crate-type = ["lib", "cdylib"]
 pom = "3.1.0"
 hex = "0.4.1"
 regex = "1.3.4"
+quote = "1.0.14"
+
+[workspace]
+members = ["yara-rs-fastly", "yara-macro"]

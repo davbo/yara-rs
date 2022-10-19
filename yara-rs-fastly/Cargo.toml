@@ -1,0 +1,14 @@
+[package]
+name = "yara-rs-fastly"
+version = "0.1.0"
+authors = []
+edition = "2018"
+
+[profile.release]
+debug = true
+
+[dependencies]
+fastly = "0.7.1"
+regex = "1.4.2"
+yara-macro = { path = "../yara-macro" }
+yara = { path = "../" }

@@ -260,10 +260,7 @@ rule rule_name
 }
         "#;
         let result = rule().parse(input);
-        assert!(
-            result.is_ok(),
-            "Example failed to parse: {:#?}", result
-        );
+        assert!(result.is_ok(), "Example failed to parse: {:#?}", result);
     }
     #[test]
     fn parse_tricky_condition_example() {
@@ -284,10 +281,7 @@ rule rule_name
 }
         "#;
         let result = rule().parse(input);
-        assert!(
-            result.is_ok(),
-            "Example failed to parse: {:#?}", result
-        );
+        assert!(result.is_ok(), "Example failed to parse: {:#?}", result);
     }
     #[test]
     fn parse_add_example() {
@@ -306,19 +300,13 @@ rule add
 
         let result = rule().parse(input);
         println!("{:#?}", result);
-        assert!(
-            result.is_ok(),
-            "Example failed to parse: {:#?}", result
-        );
+        assert!(result.is_ok(), "Example failed to parse: {:#?}", result);
     }
     #[test]
     fn parse_apple_rules() {
         let apple_rules = fs::read("tests/rules.yara").expect("unable to open file");
         let result = parse_rules(&apple_rules[..]);
-        assert!(
-            result.is_ok(),
-            "Example failed to parse: {:#?}", result
-        );
+        assert!(result.is_ok(), "Example failed to parse: {:#?}", result);
     }
     #[test]
     fn parse_string_modifiers() {
@@ -337,10 +325,7 @@ rule rule_name
 }
         "#;
         let result = rule().parse(input);
-        assert!(
-            result.is_ok(),
-            "Example failed to parse: {:#?}", result
-        );
+        assert!(result.is_ok(), "Example failed to parse: {:#?}", result);
     }
     #[test]
     fn parse_regex() {
@@ -359,9 +344,6 @@ rule rule_name
 }
         "#;
         let result = rule().parse(input);
-        assert!(
-            result.is_ok(),
-            "Example failed to parse: {:#?}", result
-        );
+        assert!(result.is_ok(), "Example failed to parse: {:#?}", result);
     }
 }
